@@ -21,7 +21,7 @@ var EX, consLog = console.log.bind(console),
 function isStr(x, no) { return (((typeof x) === 'string') || no); }
 function isNum(x, no) { return ((x === +x) || no); }
 function dfltNum(x, d) { return (x === +x ? x : d); }
-function timeStr() { return (new Date()).toTimeString().substr(0, 8); }
+function mapIf(f, x) { return (f ? x.map(f) : x); }
 function concatIf(a, b) { return ((a && b) ? a.concat(b) : (a || b)); }
 
 function ignore() { return; }
@@ -46,10 +46,9 @@ EX = function makeLoggerFactory(cfg) {
   fac = function (lvl, pre, conv) {
     if (!wants(fac, lvl)) { return ignore; }
     var l = function () {
-      var msg = arSlc.call(arguments);
-      if (l.conv) { msg = msg.map(l.conv); }
-      (cfg.logFunc || consLog)(timeStr() + ' ' + strFmt.apply(null,
-        concatIf(l.pre, msg)) + (cfg.eol || ''));
+      var now = new Date(), msg = arSlc.call(arguments);
+      fac.logFunc({ date: now, time: now.toTimeString().substr(0, 8),
+        msg: strFmt.apply(null, concatIf(l.pre, mapIf(l.conv, msg))) });
     };
     l.pre = pre;
     l.conv = conv;
@@ -59,6 +58,7 @@ EX = function makeLoggerFactory(cfg) {
     };
     return l;
   };
+  fac.logFunc = (cfg.logFunc || EX.defaultLogFunc);
 
   fac.verbosity = dfltNum(cfg.verbosity, logLv.misc);
   fac.wants = wants.bind(null, fac);
@@ -75,6 +75,9 @@ EX = function makeLoggerFactory(cfg) {
 
 EX.defaultLogLevels = dfLogLv;
 
+EX.defaultLogFunc = function (ev) {
+  console.log(ev.time + ' ' + ev.msg);
+};
 
 
 
